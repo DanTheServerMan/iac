@@ -27,27 +27,38 @@
         state: stopped
         enabled: false
 
-    - name: Configuring login banner on {{ inventory_hostname }}
-      copy:
-        src: ../files/motd
-        dest: /etc/motd
+    - name: Setting the login banner in /etc/motd
+      lineinfile:
+        path: /etc/motd
+        line:  "{{ motd }}"
         owner: root
         group: root
         mode: 0644
       notify:
         - restart_sshd
 
+    - name: Removing 10-uname to prevent kernel logging info
+      file:
+        path: /etc/update-motd.d/10-uname
+        state: absent
+
     - name: Set timezone to UTC
       timezone:
         name: UTC
 
-    - name: Configure NTP
-      copy:
-        src: ../files/chrony-template.conf
-        dest: /etc/chrony/chrony.conf
-        owner: root
-        group: root
-        mode: 0644
+    - name: Add in NTP servers
+      lineinfile:
+        path: /etc/chrony/chrony.conf
+        line:  "{{ ntp_server }}"
+        state: present
+      notify:
+        - restart_chronyd
+
+    - name: Remove default NTP pool
+      lineinfile:
+        path: /etc/chrony/chrony.conf
+        line:  "pool 2.debian.pool.ntp.org iburst"
+        state: absent
       notify:
         - restart_chronyd
 

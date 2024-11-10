@@ -1,0 +1,9 @@
+host*
+files/*
+var*
+*.tfstate
+LICENSE
+*.DS_Store
+*terraform.lock.hcl
+terraform-provider-*
+.terraform*

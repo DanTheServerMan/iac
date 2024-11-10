@@ -1,5 +1,6 @@
 # This defines our provider
 # The API URL, TOKEN_ID, and TOKEN_SECRET are all stored in vars.tf (for now) and are in .gitignore for obvious reasons
+p
 provider "proxmox" {
   pm_api_url = var.pve_api_url
   pm_api_token_id = var.pm_api_token_id
@@ -7,10 +8,7 @@ provider "proxmox" {
   pm_tls_insecure = true
 }
 
-# Using our provider, we're defining a new resources called "ubuntu"
-# The name, cores, memory, etc. have all been converted to a variable in vars.tf
-resource "proxmox_vm_qemu" "ubuntu" {
- # The name of the VM
+resource "proxmox_vm_qemu" "ci-ubuntu" {
  name        = var.vm_name
  # The PVE hostname as seen in the Datacenter object
  target_node = var.pve_hostname
@@ -26,6 +24,11 @@ resource "proxmox_vm_qemu" "ubuntu" {
  scsihw      = var.vm_scsihw
  # This is the VM notes of our VM
  desc        = var.vm_desc
+ # Sets the boot disk
+ bootdisk    = var.vm_bootdisk
+ # This is a full (not linked) clone operation. It is REQUIRED for use w/ cloudinit
+ # The var is the name of the already-templated VM in ProxMox
+ clone       = var.vm_template
 
  # This defines a disk, its location, size (In GiB), format (ex. qcow2, raw, etc.), type, and slot (ex. scsi0)
  disk {
@@ -34,15 +37,6 @@ resource "proxmox_vm_qemu" "ubuntu" {
    format = var.vm_disk1_format
    type = "disk"
    slot = var.vm_disk1_slot
- }
-
- # A second disk, defined with the same structure. However, this time its a cdrom type. 
- # We will use this to mount our OS install ISO 
- disk {
-   storage = var.vm_iso_datastore
-   iso = var.vm_iso_fullpath
-   type = "cdrom"
-   slot = "ide2"
  }
 
  # This defines the NIC of our VM, its emulation type, which PVE host bridge it is assigned to, and toggles the firewall

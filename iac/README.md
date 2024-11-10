@@ -5,6 +5,7 @@ This is the repository for any and all projects associated with dantheserverman.
 The structure of this repository is as follows:
 
 DanTheServerMan:
+```
    --> IAC (Infrastructure as Code)
     --> ProxMox
      --> Ansible
@@ -12,3 +13,4 @@ DanTheServerMan:
       --> Host (Manipulating the PVE host itself)
      --> Terraform
       --> Deploy (Deploying services on the PVE host)
+```

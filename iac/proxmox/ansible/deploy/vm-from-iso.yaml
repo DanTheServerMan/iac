@@ -1,0 +1,18 @@
+- name: Deploying a virtual machine
+  hosts: proxmox
+  vars_files:
+    - vars.yml
+  vars_prompt:
+    - name: vmid
+      prompt: "Enter in the VMID"
+      private: no
+    - name: vmname
+      prompt: "Enter in the VM name"
+      private: no
+  tasks:
+    - name: Deploying a new VM named {{ vmname }} on {{ inventory_hostname }}
+      shell: pvesh create /nodes/{{ hostname }}/qemu --vmid {{ vmid }} --cores {{ cores }} --memory {{ memory }} --ostype {{ ostype }} --onboot {{ bootonhoststartup }} --scsihw {{ scsihw }} --{{ diskID }} {{ disklocation }}:{{ disksize }} --{{ netID }} model={{ nettype }},bridge={{ netbridge }} --cdrom {{ isodatastore }}:iso/{{ iso }} --description "{{ vmdesc }}" --name "{{ vmname }}" --start 1
+
+    - name: Gathering config for newly created {{ vmname }} on {{ inventory_hostname }}
+      shell: qm config {{ vmid }}
+      register: qmconfig

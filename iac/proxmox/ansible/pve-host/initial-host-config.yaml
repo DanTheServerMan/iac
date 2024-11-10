@@ -1,8 +1,7 @@
-- name: Performing initial ProxMox host configuration 
-  # Looks for hosts tagged with [proxmox]
+- name: Performing initial ProxMox host configuration
   hosts: proxmox
-  # This handlers are only triggered if we make a change on the task that would require us to restart the service.
-  # Basically, they don't run unless we need it to
+  vars_files:
+    - vars.yml
   handlers:
     - name: restart_sshd
       service:
@@ -12,21 +11,7 @@
       service:
         name: chronyd
         state: restarted
-  # These are all the variables we need - IMPORTANT: If you have DNS working, I'd remove 'node' and just use 'inventory_hostname'
-  # for much better results
-  vars:
-    search_domain: local
-    dns_server1: 1.1.1.1
-    dns_server2: 8.8.8.8
-    iface_1: eno1
-    iface_2: eno2
-    node: caerus-pmx
-    nfs_storage: caerus-nfs-datastore
-    nfs_path: /volume1/NFS-Homelab
-    nfs_ip: 192.168.1.100
-    nfs_content: 'images'
   tasks:
-  # Installing some packages that I'll need, or prefer to work with
     - name: Installing packages on {{ inventory_hostname }}
       apt:
         pkg:
@@ -35,35 +20,30 @@
           - fio
           - net-tools
           - openvswitch-switch
-        
-  # This will stop and disable the PVE banner service, which would overwrite any custom banners
+
     - name: Disabling the PVE banner service
       service:
         name: pvebanner
         state: stopped
         enabled: false
 
-   # Given the size of our login banner, its best just to copy it as an entire file
-   # If we make the change, then we'll restart sshd
     - name: Configuring login banner on {{ inventory_hostname }}
       copy:
-        src: files/motd
+        src: ../files/motd
         dest: /etc/motd
         owner: root
         group: root
         mode: 0644
       notify:
         - restart_sshd
-        
-   # Good best practice is to set logging to UTC. This only changes it for the OS, not the GUI
+
     - name: Set timezone to UTC
       timezone:
         name: UTC
-        
-   # Copies our NTP template file, then restarts chronyd if we made the change
+
     - name: Configure NTP
       copy:
-        src: files/chrony-template.conf
+        src: ../files/chrony-template.conf
         dest: /etc/chrony/chrony.conf
         owner: root
         group: root
@@ -71,22 +51,15 @@
       notify:
         - restart_chronyd
 
-    # You could set DNS via /etc/resolv.conf if you'd like. In this instance, I wanted to try the command line interface instead.
     - name: Configure DNS
       shell: pvesh set /nodes/{{ node }}/dns --search {{ search_domain }} --dns1 {{ dns_server1 }} --dns2 {{ dns_server2 }}
 
-    # You could set network config changes in /etc/network/interfaces if you'd like. In this instance, I wanted to try the command line interface instead.
-    # I feel like utilizing these commands is easier than parsing files
     - name: Add network comments on {{ iface_1 }}
       shell: pvesh set /nodes/{{ node }}/network/{{ iface_1 }} --type eth --comments "SPAN Interface"
-      
-    # If we made a network change, we need to run 'ifreload' to apply these changes
+
     - name: Reload network interfaces
       shell: ifreload -a
-      
-    # This will configure a single NFS repository rather than doing it via the GUI
-    # NOTE: /etc/pve/storage.cfg is copied across ALL nodes. You'll need to modify the payload to restrict 
-    # it to certain nodes if you need that
+
     - name: Adding NFS storage {{ nfs_storage }} on {{ inventory_hostname }}
       blockinfile:
         path: /etc/pve/storage.cfg
@@ -97,9 +70,7 @@
                    server {{ nfs_ip }}
                    content {{ nfs_content }}
                    prune-backups keep-all=1
-                   
-    # When you have multiple nodes, having multiple 'local' and 'local-lvm' storage devices bothers me
-    # This will rename them to represent the nodes name instead
+
     - name: Rename the local storage to {{ node }}
       replace:
         path: /etc/pve/storage.cfg

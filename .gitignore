@@ -4,9 +4,10 @@ var*
 *.tfstate
 tfstate.*
 LICENSE
-*.DS_Store
+.DS_Store
 *terraform.lock.hcl
 terraform-provider-*
 .terraform*
 terraform.*
 *Store
+terraform.tfstate.backup

@@ -11,3 +11,4 @@ terraform-provider-*
 terraform.*
 *Store
 terraform.tfstate.backup
+.gitignore

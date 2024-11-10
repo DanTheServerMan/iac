@@ -8,4 +8,5 @@ LICENSE
 *terraform.lock.hcl
 terraform-provider-*
 .terraform*
+terraform.*
 *Store

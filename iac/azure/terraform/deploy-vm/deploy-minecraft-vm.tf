@@ -107,6 +107,6 @@ resource "azurerm_linux_virtual_machine" "minecraft-server" {
 # Failing to have a sleep here can cause the playbook to fail, as the VM is still booting, returning "Connection refused"
 # Adding in a arg to accept new host keys, by default it will sit and wait for you to accept the new key. If you don't sit and watch it'll cause a timeout.
   provisioner "local-exec" {
-    command = "sleep 10 && ansible-playbook -i ${azurerm_linux_virtual_machine.minecraft-server.public_ip_address}, -u lorddongus --private-key ~/.ssh/id_rsa ../ansible/configure-minecraft.yml --ssh-common-args='-o StrictHostKeyChecking=accept-new'"
+    command = "sleep 10 && ansible-playbook -i ${azurerm_linux_virtual_machine.minecraft-server.public_ip_address}, -u var.username --private-key ~/.ssh/id_rsa ../ansible/configure-minecraft.yml --ssh-common-args='-o StrictHostKeyChecking=accept-new'"
   }
 }

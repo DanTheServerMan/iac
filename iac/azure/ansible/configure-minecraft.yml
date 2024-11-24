@@ -1,0 +1,55 @@
+- name: Installing and starting Minecraft 
+  hosts: all
+  become: yes
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Updating package lists on 
+      apt:
+        update_cache: yes
+
+    - name: Downloading pre-reqs for Minecraft
+      apt:
+        pkg: 
+        - openjdk-21-jdk-headless
+
+    - name: Updating packages 
+      apt:
+        package: "*"
+        state: latest
+
+    - name: Checking if a reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    - name: Rebooting the host if a reboot is required after updates
+      reboot:
+      when: reboot_required.stat.exists == true
+
+    - name: Create a minecraft directory
+      file:
+        path: "{{ minecraft_directory }}"
+        state: directory
+
+    - name: Download a Minecraft .jar 
+      get_url:
+        url: "{{ minecraft_url }}"
+        dest: "{{ minecraft_directory }}/server.jar"
+
+    - name: Run a first time startup on the downloaded .jar, so that we can generate the required files
+      shell: cd {{ minecraft_directory }} && {{ minecraft_initial_cmd }}
+
+# With forge, you have to run the .jar the first time to generate any files. This includes a ./run.sh file. The ./run.sh needs to be ran before the EULA is generated
+    - name: Run a first time startup on the downloaded Forge .jar, so that we can generate the required files
+      shell: cd {{ minecraft_directory }} && {{ minecraft_forge_initial_cmd }}
+      ignore_errors: true
+
+    - name: Accept the EULA
+      lineinfile: 
+        path: "{{ minecraft_eula_path }}"
+        search_string: "eula=false" 
+        line: eula=true
+
+    - name: Run the true minecraft server via screen
+      shell: cd {{ minecraft_directory }} && {{ minecraft_launch_cmd }}

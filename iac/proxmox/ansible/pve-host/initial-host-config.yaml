@@ -66,7 +66,16 @@
       shell: pvesh set /nodes/{{ node }}/dns --search {{ search_domain }} --dns1 {{ dns_server1 }} --dns2 {{ dns_server2 }}
 
     - name: Add network comments on {{ iface_1 }}
-      shell: pvesh set /nodes/{{ node }}/network/{{ iface_1 }} --type eth --comments "SPAN Interface"
+      shell: pvesh set /nodes/{{ node }}/network/{{ iface_1 }} --type eth --comments "{{ iface_1_desc }}"
+
+    - name: Add network comments on {{ iface_2 }}
+      shell: pvesh set /nodes/{{ node }}/network/{{ iface_2 }} --type eth --comments "{{ iface_2_desc }}"
+
+    - name: Add network comments on {{ bridge_1 }}
+      shell: pvesh set /nodes/{{ node }}/network/{{ bridge_1 }} --type eth --comments "{{ bridge_1_desc }}"
+
+    - name: Add network comments on {{ bridge_2 }}
+      shell: pvesh set /nodes/{{ node }}/network/{{ bridge_2 }} --type eth --comments "{{ bridge_2_desc }}"
 
     - name: Reload network interfaces
       shell: ifreload -a

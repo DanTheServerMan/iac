@@ -1,0 +1,7 @@
+---
+minecraft_url: "URL_TO_MINECRAFT_SERVER_JAR"
+minecraft_directory: /home/YOUR_USER_HERE/minecraft/
+minecraft_eula_path: /home/YOUR_USER_HERE/minecraft/eula.txt
+minecraft_initial_cmd: java -jar server.jar --installServer
+minecraft_forge_initial_cmd: /home/YOUR_USER_HERE/minecraft/run.sh
+minecraft_launch_cmd: screen -S MINECRAFT_SERVER /home/YOUR_USER_HERE/minecraft/run.sh

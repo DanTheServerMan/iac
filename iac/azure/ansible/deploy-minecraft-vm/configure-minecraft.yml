@@ -4,52 +4,70 @@
   vars_files:
     - vars.yml
   tasks:
-    - name: Updating package lists on 
-      apt:
-        update_cache: yes
+    - name: Install the latest packages & pre-reqs. If a reboot is required, reboot the VM. Create a '{{ minecraft_user }}' user.
+      block:
+       - name: Updating package lists  
+         apt:
+           update_cache: yes
 
-    - name: Downloading pre-reqs for Minecraft
-      apt:
-        pkg: 
-        - openjdk-21-jdk-headless
+       - name: Downloading pre-reqs for Minecraft, htop due to personal preference, and acl to prevent errors when we use become_minecraft later
+         apt:
+           pkg: 
+           - openjdk-21-jdk-headless
+           - htop
+           - acl
 
-    - name: Updating packages 
-      apt:
-        package: "*"
-        state: latest
+       - name: Updating all packages to their latest version
+         apt:
+           package: "*"
+           state: latest
 
-    - name: Checking if a reboot is required
-      stat:
-        path: /var/run/reboot-required
-      register: reboot_required
+       - name: Checking if a reboot is required after package updates
+         stat:
+           path: /var/run/reboot-required
+         register: reboot_required
 
-    - name: Rebooting the host if a reboot is required after updates
-      reboot:
-      when: reboot_required.stat.exists == true
+       - name: Rebooting the host if a reboot is required after updates
+         reboot:
+         when: reboot_required.stat.exists == true
 
-    - name: Create a minecraft directory
-      file:
-        path: "{{ minecraft_directory }}"
-        state: directory
+       - name: Create a user '{{ minecraft_user }}' with a home directory to segment the files & processes
+         ansible.builtin.user:
+           name: "{{ minecraft_user }}"
+           create_home: yes
 
-    - name: Download a Minecraft .jar 
-      get_url:
-        url: "{{ minecraft_url }}"
-        dest: "{{ minecraft_directory }}/server.jar"
+    - name: Configuring the Minecraft server as the minecraft user
+      become_user: "{{ minecraft_user }}"
+      block:
 
-    - name: Run a first time startup on the downloaded .jar, so that we can generate the required files
-      shell: cd {{ minecraft_directory }} && {{ minecraft_initial_cmd }}
+       - name: Download a Minecraft .jar in the {{ minecraft_user }} directory
+         get_url:
+           url: "{{ minecraft_url }}"
+           dest: "{{ minecraft_directory }}/server.jar"
 
-# With forge, you have to run the .jar the first time to generate any files. This includes a ./run.sh file. The ./run.sh needs to be ran before the EULA is generated
-    - name: Run a first time startup on the downloaded Forge .jar, so that we can generate the required files
-      shell: cd {{ minecraft_directory }} && {{ minecraft_forge_initial_cmd }}
-      ignore_errors: true
+       - name: Run a first time startup on the downloaded .jar, so that we can generate the required files
+         shell: cd {{ minecraft_directory }} && {{ minecraft_initial_cmd }}
 
-    - name: Accept the EULA
-      lineinfile: 
-        path: "{{ minecraft_eula_path }}"
-        search_string: "eula=false" 
-        line: eula=true
+       # With forge, you have to run the .jar the first time to generate any files. This includes a ./run.sh file. The ./run.sh needs to be ran before the EULA is generated
+       # Since this is a forge specific issue, that is why it will ignore_errors if it fails if ./run.sh doesn't exist (if you're using a vanilla server)
+       - name: Run a first time startup on the downloaded Forge .jar, so that we can generate the required files again
+         shell: cd {{ minecraft_directory }} && {{ minecraft_forge_initial_cmd }}
+         ignore_errors: true
 
-    - name: Run the true minecraft server via screen
-      shell: cd {{ minecraft_directory }} && {{ minecraft_launch_cmd }}
+       - name: Accept the EULA
+         lineinfile: 
+           path: "{{ minecraft_directory }}eula.txt"
+           search_string: "eula=false" 
+           line: eula=true
+
+       # With forge, you specify the min/max amounts of RAM in user_jvm_args.txt . In Vanilla, you specify it in the launch command
+       # Since not everyone is using forge, I used ignore_errors as this will fail if its Vanilla. You would just need to tweak your minecraft_launch_cmd to represent the resources you want/need
+       - name: Specify the memory resources for the minecraft server
+         lineinfile: 
+           path: "{{ minecraft_directory }}user_jvm_args.txt"
+           line: "{{ minecraft_forge_max_ram }}"
+           state: present
+         ignore_errors: true
+
+       - name: Run the final minecraft server launch via screen
+         shell: cd {{ minecraft_directory }} && {{ minecraft_launch_cmd }}

@@ -17,7 +17,9 @@
            - htop
            - acl
 
-       - name: Updating all packages to their latest version
+       - name: Updating al
+       
+       l packages to their latest version
          apt:
            package: "*"
            state: latest

@@ -1,7 +1,15 @@
 ---
+# This is usually the offical download link online
 minecraft_url: "URL_TO_MINECRAFT_SERVER_JAR"
+# This is a Linux user that will be created in the VM
 minecraft_directory: /home/YOUR_USER_HERE/minecraft/
+# This is the absolute path to the EULA file
 minecraft_eula_path: /home/YOUR_USER_HERE/minecraft/eula.txt
+# This is the command used to first run the server, which then creates the EULA/other necessary files
 minecraft_initial_cmd: java -jar server.jar --installServer
-minecraft_forge_initial_cmd: /home/YOUR_USER_HERE/minecraft/run.sh
+# For Forge, there is a second initial command needed. This runs the 2nd necessary start command
+# If this is Vanilla MC, you can just leave this blank. The task will fail but the playbook will not fail.
+minecraft_mforge_initial_cmd: /home/YOUR_USER_HERE/minecraft/run.sh
+# Replace YOUR_USER_HERE with the Linux user you specified above
+# MINECRAFT_SERVER is the name of the screen session that gets created
 minecraft_launch_cmd: screen -S MINECRAFT_SERVER /home/YOUR_USER_HERE/minecraft/run.sh
